@@ -38,12 +38,15 @@
 #   DB[:table].insert(:column=>Sequel.pg_json([1, 2, 3]))
 #   DB[:table].insert(:column=>Sequel.pg_json({'a'=>1, 'b'=>2}))
 #
-# If you would like to use PostgreSQL json columns in your model
-# objects, you probably want to modify the schema parsing/typecasting
-# so that it recognizes and correctly handles the json type, which
-# you can do by:
+# If you would like your PostgreSQL json columns to be typecasted to/from Ruby
+# hashes and arrays in your model objects, you probably want to modify the
+# schema parsing/typecasting so that it recognizes and correctly handles the
+# json type, which you can do by:
 #
 #   DB.extension :pg_json
+#
+# Note that you need to load the extension before schema parsing, so before the
+# first model is defined.
 #
 # See the {schema modification guide}[rdoc-ref:doc/schema_modification.rdoc]
 # for details on using json columns in CREATE/ALTER TABLE statements.
