@@ -1,6 +1,7 @@
 # frozen-string-literal: true
 
 require_relative 'shared/postgres'
+require 'delegate'
 
 begin 
   require 'pg' 
@@ -41,7 +42,7 @@ module Sequel
 
     # PGconn subclass for connection specific methods used with the
     # pg or postgres-pr driver.
-    class Adapter < PGconn
+    class Adapter < DelegateClass(PGconn)
       # The underlying exception classes to reraise as disconnect errors
       # instead of regular database errors.
       DISCONNECT_ERROR_CLASSES = [IOError, Errno::EPIPE, Errno::ECONNRESET]
@@ -64,7 +65,17 @@ module Sequel
       # also trying parsing the exception message to look for disconnect
       # errors.
       DISCONNECT_ERROR_RE = /\A#{Regexp.union(disconnect_errors)}/
-      
+
+      PGconn.methods(false).each do |method_name|
+        define_singleton_method(method_name) do |*args, &block|
+          Pgconn.send(*args, &block)
+        end
+      end
+
+      def self.connect(*args, &block)
+        new PGconn.connect(*args, &block)
+      end
+
       if USES_PG
         # Hash of prepared statements for this connection.  Keys are
         # string names of the server side prepared statement, and values
@@ -128,7 +139,7 @@ module Sequel
           rescue PGError
             disconnect = true
           end
-          status_ok = (s == Adapter::CONNECTION_OK)
+          status_ok = (s == PGconn::CONNECTION_OK)
           disconnect ||= !status_ok
           disconnect ||= e.message =~ DISCONNECT_ERROR_RE
           disconnect ? raise(Sequel.convert_exception_class(e, Sequel::DatabaseDisconnectError)) : raise
